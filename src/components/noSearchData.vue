@@ -1,5 +1,5 @@
 <template>
-    <div v-show="totalCount == 0">
+    <div v-if="!resultData.list || resultData.list.length == 0">
         <div class="no-data">
         <img alt="" src="~@/assets/imgs/no-data.png" style="margin-left:208px; width:200px;margin-bottom:30px;"/>
         <div class="no-data-body">
@@ -30,7 +30,7 @@
 
 <script>
     export default {
-        props:['totalCount'],
+        props:['resultData'],
         data() {
             return {
                 isDownload: false
@@ -38,7 +38,7 @@
         },
         methods: {
             uploadData() {
-                
+                this.$emit('uploadData')
             }
         },
     }
@@ -108,7 +108,7 @@
         transform: translate(-50%, -50%);
         width: 315px;
         height: 452px;
-        z-index: 99999;
+        z-index: 9999999;
         border-radius: 10px;
         // display: none;
     }

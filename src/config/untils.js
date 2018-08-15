@@ -29,21 +29,23 @@ export const removeStore = name => {
 }
 
 /**
- * 获取style样式
+ * 获取浏览器传递参数
  */
-
-export const getStyle = (element, attr, NumberMode = 'int') => {
-    let target;
-    // scrollTop 获取方式不同，没有它不属于style，而且只有document.body才能用
-    if (attr === 'scrollTop') {
-        target = element.scrollTop;
-    }else{
-        target = document.defaultView.getComputedStyle(element,null)[attr];
-    }
-    //在获取 opactiy 时需要获取小数 parseFloat
-    return  NumberMode == 'float'? parseFloat(target) : parseInt(target);
-}
-
+export const getParams = url => {
+	var params = {};
+	var paramString = (url === undefined || url === null) ? window.location.search.substr(1) : url;
+	var paramArray = paramString.split('&');
+	for( let i = 0; i < paramArray.length; i ++ ){
+		var itemArray = paramArray[i].split('=');
+		var key = '';
+		var value = null;
+		if( itemArray.length > 0 ) key = decodeURIComponent(itemArray[0]);
+		if( itemArray.length > 1 ) value = decodeURIComponent(itemArray[1]);
+		if( !key ) continue;
+		params[key] = value;
+	}
+	return params;
+};
 /**
  * 填充函数
  */

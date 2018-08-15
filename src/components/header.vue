@@ -29,7 +29,7 @@
 		<!-- header 货单导入下拉 -->
 		<slot name="importBtn"></slot>
 		<!-- 分享按钮 -->
-		<img @click="clickShare" v-show="isShare" id="shareBtn" class="list-derive" alt="" src="@/assets/imgs/icon-share.png">
+		<img @click="clickShare" v-if="isShare" id="shareBtn" class="list-derive" alt="" src="@/assets/imgs/icon-share.png">
 		<!-- header 货单搜索 -->
 		<slot name="goodsSearchBtn"></slot>
 		<!-- header 共用时间 isHeaderTime 定义显示与否-->
@@ -56,7 +56,7 @@
 		props: ['isHome', 'isHeaderTime', 'isShare'],
         data() {
             return {
-				time: [new Date() - ( 3600 * 24 * 1000 ), +new Date()]
+				time: [new Date() - ( 3600 * 24 * 30 * 1000 ), +new Date()]
             }
         },
         computed: {

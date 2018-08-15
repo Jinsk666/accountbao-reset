@@ -80,6 +80,12 @@
 
 <style lang="scss" scoped>
     @import '../../style/mixin';
+    .list {
+        width: 100%;
+        min-width: 1024px;
+        height: 100%;
+       // position: relative;
+    }
     .to-close{
         cursor: pointer;
     }
@@ -112,6 +118,7 @@
         box-shadow: 1px 4px 10px 0 #919aaa;
         float: left;
         margin-right: 3%;
+        min-width:180px;
         cursor: pointer;
         &:hover{
             box-shadow: 1px 1px 6px $color;

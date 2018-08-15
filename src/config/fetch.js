@@ -1,7 +1,13 @@
 import { baseUrl } from './env'
 import { getStore, setStore, removeStore } from './untils'
 
-export default async(url = '', data = {}, type = 'GET', pathType = 2, method = 'fetch') => {
+/**  pathType 用法
+ *   	== 1  登陆相关
+ *   	== 2  正常
+ *   	== 3  上传文件
+ */
+
+export default async(url = '', data = {}, type = 'GET', pathType = 2) => {
 	type = type.toUpperCase();
 	let apiPath = '/farmeasy-accountsbao-service';
 	if( pathType == 1 ) apiPath = '/farmeasy-api-gateway/farmeasy-auth-service';
@@ -27,17 +33,25 @@ export default async(url = '', data = {}, type = 'GET', pathType = 2, method = '
 
 		let sendData = '';
 		if (type == 'POST') {
-			sendData = JSON.stringify(data);
+			if(pathType == 3){
+				sendData = data;
+			}else {
+				sendData = JSON.stringify(data);
+			}
 		}
 
 		requestObj.open(type, url, true);
-		requestObj.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+		if(pathType == 3) {
+			//requestObj.setRequestHeader("Content-type", "x-www-form-urlencoded");
+		}else {
+			requestObj.setRequestHeader("Content-type", "application/json");
+		}
 		/* 验证相关 */
 		requestObj.setRequestHeader("Platform-Code", "24yypy8pw1xp");
 		requestObj.setRequestHeader("Platform-Secret", "6w6m8v9ihl55dcuafp0ux0zil7yqyuqx");
 
 		let token = getStore('Access-Token');
-		if( token && pathType == 2 ) requestObj.setRequestHeader('Access-Token', token);
+		if( token && pathType != 1 ) requestObj.setRequestHeader('Access-Token', token);
 		requestObj.send(sendData);
 
 		requestObj.onreadystatechange = () => {
@@ -45,7 +59,11 @@ export default async(url = '', data = {}, type = 'GET', pathType = 2, method = '
 				if (requestObj.status == 200) {
 					let obj = requestObj.response;
 					if (typeof obj !== 'object') {
-						obj = JSON.parse(obj);
+						try{
+							obj = JSON.parse(obj);
+						}catch(e){
+							
+						}
 					}
 					resolve(obj)
 				} else {

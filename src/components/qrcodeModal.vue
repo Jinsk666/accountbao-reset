@@ -1,9 +1,9 @@
 <template>
-    <div class="share-model" v-show="isShowShareModal">
+    <div class="share-model" v-if="isShowShareModal">
         <div class="share-code">
             <div class="share-code-icon">
                 <div class="share-code-bg">
-                    <div id="qrcode"></div>
+                    <canvas id="qrcode"></canvas>
                 </div>
             </div>
             <div class="share-code-font">扫一扫, 分享账单</div>
@@ -13,11 +13,26 @@
 </template>
 
 <script>
+    import qrcode from 'qrcode'
+    import { shareUrl } from '@/config/env'
+    import { getStore } from '@/config/untils'
     export default {
-        props: ['isShowShareModal'],
+        props: ['isShowShareModal', 'shareIds'],
         data() {
             return {
             }
+        },
+        mounted: function() {
+            let canvas = document.querySelectorAll('#qrcode')[0];
+            let userInfoId = getStore('User-Id') || '';
+            let base = shareUrl + `ids=${this.shareIds}&userInfoId=${userInfoId}`;
+            qrcode.toCanvas(canvas, base, (error) => {
+                if(error) {
+                    this.$message.error('获取失败');
+                }else {
+                    
+                }
+            })
         },
         methods: {
             closeShareModal() {
@@ -68,7 +83,7 @@
     }
     #qrcode {
         @include center();
-        width: 208px;
-        height: 208px;
+        width: 228px!important;
+        height: 228px!important;
     }
 </style>

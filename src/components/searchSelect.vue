@@ -22,7 +22,7 @@
 	        </div>
 	        <!-- 去向 -->
             <div class="search-list" id="whereaboutsList" :class="{height: !whereaboutsListMoreClick}">
-	            <p class="list-title">来源</p>
+	            <p class="list-title">去向</p>
 	            <div class="list-more" v-show="whereaboutsListMore">
                     <p class="list-more-up" @click="whereaboutsListMoreClick = !whereaboutsListMoreClick" v-show="whereaboutsListMoreClick">更多
                         <img src="../assets/imgs/icon2.png" width="15"/>
@@ -113,7 +113,6 @@
 
 <script>
     import { getSearchSelect } from '@/service/getData'
-    import { getStyle } from '@/config/untils'
 
     export default {
         props: ['searchItemIsShow'],
@@ -159,17 +158,14 @@
         },
         mounted() {
             getSearchSelect().then((data) => {
-                console.dir(data);
-                if( data.code == '0000' ){
-                    this.data = data.data;
-                    this.$nextTick(() => {
-                        for(var key in this.map) {
-                            let dom = document.querySelector(key +' ul');
-                            let height = getStyle(dom, 'height');
-                            this[this.map[key]] = height > 46 ? true : false;
-                        }
-                    })
-                }
+                this.data = data.data;
+                this.$nextTick(() => {
+                    for(var key in this.map) {
+                        let dom = document.querySelector(key +' ul');
+                        let height = dom.offsetHeight;
+                        this[this.map[key]] = height > 46 ? true : false;
+                    }
+                })
             });
         },
         computed: {

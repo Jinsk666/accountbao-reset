@@ -1,5 +1,6 @@
 import fetch from '../config/fetch';
 import { hex_sha1 } from '../assets/sha1';
+import { userInfo } from 'os';
 
 /**
  * 获取验证码
@@ -43,7 +44,7 @@ export const getModifyPassword = ( phone, verify, password, password2 ) => fetch
   * 货单获取结果列表
   */
 
-export const searchGoodsResult = (beginDate, endDate, content, index ) => fetch('/getRecordByPage',{
+export const searchGoodsResult = (beginDate, endDate, content, index ) => fetch('/v1.0/accounts/record/searchRecords',{
     "beginDate": beginDate,
     "endDate": endDate,
     "likeParams": content,
@@ -51,11 +52,10 @@ export const searchGoodsResult = (beginDate, endDate, content, index ) => fetch(
 }, 'POST')
 
 /**
- * 货单单获取单行具体信息
+ * 获取单行具体信息
  */
 
-export const searchDetails = id => fetch('/getDetail',{
-    id: id
+export const searchDetails = id => fetch('/v1.0/accounts/record/get/'+id,{
 })
 
 /**
@@ -70,4 +70,12 @@ export const getSearchSelect = () => fetch('/v1.0/accounts/record/getSearchLable
  * 获取账单结果列表
  */
 
-export const searchBillResult = ( params ) => fetch('/getRecordByPage', params, 'POST')
+export const searchBillResult = params => fetch('/v1.0/accounts/record/getStatisticsResult', params, 'POST')
+
+// 上传文件
+export const uploadExcel = file => fetch('/uploadExcel', file, 'POST', 3)
+
+// 打印数据
+export const getPrintInfo = (ids, printType) => fetch('/v1.0/accounts/record/searchRecords',{
+    ids: ids,
+}, 'POST')

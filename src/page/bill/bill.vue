@@ -1,5 +1,5 @@
 <template>
-    <div id="bill">
+    <div id="bill" >
         <head-top
             isHome="true"
             isHeaderTime="true"
@@ -8,16 +8,16 @@
             @clickShare="clickShare">
 			<div class="list-search" slot="goodsSearchInput">
                 <img alt="search" src="@/assets/imgs/icon_search.png">
-                <input id="likeParams" v-model="searchParams.linkParms" type="text" placeholder="品名/批次号/装箱号" @click="searchItemIsShow = !searchItemIsShow">
+                <input id="likeParams" v-model="searchParams.linkParms" type="text" placeholder="品名/批次号/装箱号" @click="searchItemIsShow = true">
 			</div>
         </head-top>
-        <div id="search_result" v-show="resultTableIsShow">
+        <div id="search_result" v-if="totalCount">
           <div class="result-header">
               <div class="item-name">
                   <div class="all-bill">账单汇总</div>
                   <div class="static-time">
-                      <div>开始时间：  <span class="item-begin-time">{{searchParams.beginDate}}</span></div>
-                      <div>结束时间： <span class="item-end-time">{{searchParams.endDate}}</span> </div>
+                      <div>开始时间：  <span class="item-begin-time">{{resultData.beginDate}}</span></div>
+                      <div>结束时间： <span class="item-end-time">{{resultData.endDate}}</span> </div>
                   </div>
               </div>
               <div id="result_item">
@@ -27,7 +27,7 @@
                     stripe
                     style="width: 100%"
                     :max-height="tableMaxHeight"
-                    :data="resultData"
+                    :data="resultData.list"
                     @selection-change="handleSelectionChange">
                     <el-table-column
                         type="selection"
@@ -36,7 +36,7 @@
                     </el-table-column>
                     <el-table-column
                         align="center"
-                        prop="num"
+                        type="index"
                         label="序号"
                         min-width="140">
                     </el-table-column>
@@ -48,19 +48,19 @@
                     </el-table-column>
                     <el-table-column
                         align="center"
-                        prop="count"
+                        prop="weight"
                         label="数量"
                         min-width="180">
                     </el-table-column>
                     <el-table-column
                         align="center"
-                        prop="time"
+                        prop="accountsTime"
                         label="记账时间"
                         min-width="200">
                     </el-table-column>
                     <el-table-column
                         align="center"
-                        prop="people"
+                        prop="operator"
                         label="经手人"
                         min-width="160">
                     </el-table-column>
@@ -78,27 +78,26 @@
               </div>
               <div class="item-calc">
                   <div class="all-count">
-                    合计： <span id="total_count">0</span> kg <span id="other" style="color:rgb(0, 172, 233)"></span>
+                    合计： <span id="total_count">{{resultData.weightAmount}}</span> kg <span id="other" style="color:rgb(0, 172, 233)"></span>
                   </div>
-                      <div style="margin:0px 10px;float:right;">最大： <span id="max_count">0</span> kg</div>
-                      <div style="margin:0px 10px;float:right;">最小： <span id="min_count">0</span> kg</div>
-                      <div style="margin:0px 10px;float:right;">均值： <span id="average_count">0</span> kg </div>
+                      <div style="margin:0px 10px;float:right;">最大： <span id="max_count">{{resultData.maxAmount}}</span> kg</div>
+                      <div style="margin:0px 10px;float:right;">最小： <span id="min_count">{{resultData.minAmount}}</span> kg</div>
+                      <div style="margin:0px 10px;float:right;">均值： <span id="average_count">{{resultData.averageAmount}}</span> kg </div>
               </div>
           </div>
         </div>
-        <div class="result-bottom" id="result-bottom" v-show="footerBtnIsShow">
-              <span id="print-now">立即打印</span>
-              <span id="export-now">立即导出</span>
+        <div class="result-bottom" id="result-bottom" v-if="totalCount">
+              <span id="print-now" @click="printFooter">立即打印</span>
+              <span id="export-now" @click="exportFooter">立即导出</span>
         </div>
-        <no-data :totalCount="totalCount">
-
-        </no-data>
+        <no-data :totalCount="totalCount"></no-data>
         <!-- 验证码分享 -->
-        <qrcode-modal :isShowShareModal="isShowShareModal" @closeShareModal="isShowShareModal = !isShowShareModal"> </qrcode-modal>
+        <qrcode-modal v-if="isShowShareModal" :isShowShareModal="isShowShareModal" :shareIds="shareIds" @closeShareModal="isShowShareModal = false"> </qrcode-modal>
         <!-- 下拉搜索框 -->
         <search-select :searchItemIsShow="searchItemIsShow" @searchResult="searchResult" @billReset="searchItemIsShow=false"></search-select>
         <!-- 黑色遮罩 -->
         <div id="c-model" v-show="isShowShareModal"></div>
+        <table-alert :isShowRowSearch="isShowRowSearch" :data="detailsData" @closeTableAlert="closeTableAlert"></table-alert>
     </div>
 </template>
 
@@ -107,15 +106,16 @@
     import noData from '@/components/noData'
     import qrcodeModal from '@/components/qrcodeModal'
     import searchSelect from '@/components/searchSelect'
-    import { getEleTime } from '@/config/untils'
-    import { searchBillResult } from '@/service/getData'
+    import tableAlert from '@/components/tableAlert'
+    import { getEleTime, exportExcel } from '@/config/untils'
+    import { searchBillResult, searchDetails } from '@/service/getData'
     import { mapState, mapMutations } from 'vuex'
 
     export default {
         data() {
             return {
                 time:'',
-				totalCount: 1, // 总记录数
+				totalCount: 0, // 总记录数
 				searchItemIsShow: true, // 下拉框
                 isShowShareModal: false, // 分享码弹出框
                 searchParams: { // 搜索条件
@@ -130,59 +130,84 @@
                     sourceList: [],
                     whereaboutsList: []
                 },
-                footerBtnIsShow: true,
-                resultTableIsShow: true,
                 tableHeight: 0, // 表格高度
-                resultData: [   // 搜索结果 二次封装
-                    {num:'0', name:'aaa',time:'1018-1-1',count:'infinity', people:'Me'},
-                    {num:'0', name:'aaa',time:'1018-1-1',count:'infinity', people:'Me'},
-                    {num:'0', name:'aaa',time:'1018-1-1',count:'infinity', people:'Me'},
-                    {num:'0', name:'aaa',time:'1018-1-1',count:'infinity', people:'Me'},
-                    {num:'0', name:'aaa',time:'1018-1-1',count:'infinity', people:'Me'},
-                    {num:'0', name:'aaa',time:'1018-1-1',count:'infinity', people:'Me'},
-                    {num:'0', name:'aaa',time:'1018-1-1',count:'infinity', people:'Me'},
-                    {num:'0', name:'aaa',time:'1018-1-1',count:'infinity', people:'Me'},
-                    {num:'0', name:'aaa',time:'1018-1-1',count:'infinity', people:'Me'},
-                    {num:'0', name:'aaa',time:'1018-1-1',count:'infinity', people:'Me'},
-                    {num:'0', name:'aaa',time:'1018-1-1',count:'infinity', people:'Me'},
-                    {num:'0', name:'aaa',time:'1018-1-1',count:'infinity', people:'Me'},
-                    {num:'0', name:'aaa',time:'1018-1-1',count:'infinity', people:'Me'},
-                    {num:'0', name:'aaa',time:'1018-1-1',count:'infinity', people:'Me'},
-                    {num:'0', name:'aaa',time:'1018-1-1',count:'infinity', people:'Me'},
-                ],
+                resultData: {}, // 搜索结果
+                isShowRowSearch: false, // tr 弹窗
+                detailsData: '', // tr 详情
+                selectArr: [], //选中项
+                loading: false,
             }
         },
         components: {
-            headTop, noData, searchSelect, qrcodeModal
+            headTop, noData, searchSelect, qrcodeModal, tableAlert
         },
         computed: {
             tableMaxHeight: function(){
                 return document.body.clientHeight - 300
+            },
+            shareIds: function() {
+                let arr = [];
+                if( this.selectArr.length > 0 ){
+                    arr = this.selectArr.map( val => {
+                        return val.accountsRecordId
+                    })
+                }else {
+                    if( this.resultData.list && this.resultData.list.length > 0 ) {
+                        arr = this.resultData.list.map( val => {
+                            return val.accountsRecordId
+                        })
+                    }
+                }
+                return arr.join(',');
             }
         },
         methods: {
+            //  表格操作列点击
+            async tableSearchClick(scope) {
+                this.loading = this.$loading({text: '加载中...'})
+                this.detailsData = await searchDetails(scope.row.accountsRecordId || 0);
+                this.isShowRowSearch = true;
+                this.loading.close();
+            },
+            closeTableAlert() {
+                this.isShowRowSearch = false;
+            },
             getTime(time) {
                 this.time = getEleTime(time, 1);
-                
+                this.searchResult();
             },
             async searchResult(params) {
+                this.loading = this.$loading({text: '加载中...'})
                 // 搜索时 才获取时间
                 this.searchParams.beginDate = this.time[0];
                 this.searchParams.endDate = this.time[1];
 
                 Object.assign(this.searchParams, params);
-                let data = searchBillResult(this.searchParams);
-                //if( data.code == '0000'){
-                    this.searchItemIsShow = false;
-                //}
+                let data = await searchBillResult(this.searchParams);
+                this.searchItemIsShow = false;
+                this.resultData = data.data;
+                this.totalCount = (this.resultData.list && this.resultData.list.length) || 0;
+                this.loading.close();
             },
             // 点击分享
             clickShare() {
-                this.isShowShareModal = !this.isShowShareModal;
+                if( this.resultData.list && this.resultData.list.length > 0 ) {
+                    this.isShowShareModal = true;
+                }else {
+                    this.$message('没有可分享的数据');
+                }
             },
             // 选中发生改变时触发
             handleSelectionChange(val) {
-                console.log(val);
+                this.selectArr = val;
+            },
+            // 导出
+            exportFooter() {
+                exportExcel(this.shareIds);
+            },
+            // 打印
+            printFooter() {
+                this.$router.push({name: 'print', params:{ids: this.shareIds, printType: 2}})
             }
         }
     }

@@ -32,7 +32,7 @@
 			</div>
         </head-top>
         <!-- 导入文件弹出框  -->
-        <div class="commit-file" v-show="isFileType">
+        <div class="commit-file" v-if="isFileType">
             <div class="c-header">
                 <span>提示</span>
                 <span class="close" @click="close">x</span>
@@ -50,19 +50,19 @@
             </div>
         </div>
 		<!-- 无搜索结果  -->
-		<no-data :totalCount="totalCount">
+		<no-data @uploadData="uploadData" :totalCount="totalCount" :resultData="resultData">
 
 		</no-data>
         <!-- 验证码分享 -->
-        <qrcode-modal :isShowShareModal="isShowShareModal" @closeShareModal="isShowShareModal = !isShowShareModal"> </qrcode-modal>
+        <qrcode-modal v-if="isShowShareModal" :isShowShareModal="isShowShareModal" :shareIds="shareIds" @closeShareModal="isShowShareModal = false"> </qrcode-modal>
         <!-- 中间内容区域 -->
-        <div class="container">
+        <div class="container" v-if="totalCount">
             <el-table
                 ref="multipleTable"
                 stripe
                 style="width: 100%"
                 :height="containerHeight"
-                :data="resultData"
+                :data="resultData.list"
                 @selection-change="handleSelectionChange">
                 <el-table-column
                     type="selection"
@@ -71,7 +71,7 @@
                 </el-table-column>
                 <el-table-column
                     align="center"
-                    prop="num"
+                    type="index"
                     label="序号"
                     min-width="140">
                 </el-table-column>
@@ -83,19 +83,19 @@
                 </el-table-column>
                 <el-table-column
                     align="center"
-                    prop="count"
+                    prop="weight"
                     label="数量"
                     min-width="180">
                 </el-table-column>
                 <el-table-column
                     align="center"
-                    prop="time"
+                    prop="accountsTime"
                     label="记账时间"
                     min-width="200">
                 </el-table-column>
                 <el-table-column
                     align="center"
-                    prop="people"
+                    prop="operator"
                     label="经手人"
                     min-width="160">
                 </el-table-column>
@@ -112,36 +112,20 @@
             </el-table>
         </div>
         <!-- goods 底部按钮 -->
-        <div id="list_footer" v-show="totalCount != 0">
-			<div class="select-footer">
+        <div id="list_footer" v-if="totalCount">
+			<!-- <div class="select-footer">
 				<input type="checkbox" id="all_choose">
 				<label for="all_choose" @click="chooseAll">全选</label>
-			</div>
+			</div> -->
 			<span>共选: </span>
-			<span class="choose-data">{{totalCount}}</span>
+			<span class="choose-data">{{selectArr.length}}</span>
 			条
 			<div class="export-footer" @click="exportFooter">立即导出</div>
 			<div class="print-footer" @click="printFooter">立即打印</div>
 		</div>
         <!-- 黑色遮罩 -->
         <div id="c-model" v-show="isShowShareModal"></div>
-        <!-- 表格单挑记录弹出框 -->
-        <div class="mark" v-show="isShowRowSearch">
-			<div class="dialog">
-				<div class="dialog-title">
-					<span>查看详情</span>
-					<img @click="isShowRowSearch = !isShowRowSearch" src="@/assets/imgs/icon_close.png" alt="close">
-				</div>
-				<div class="dialog-content">
-					<table class="dialog-table" id="detail_table" cellspacing="0" cellpadding="0">
-
-					</table>
-				</div>
-				<div class="back">
-					<a @click="isShowRowSearch = !isShowRowSearch">返回</a>
-				</div>
-			</div>
-		</div>
+        <table-alert :isShowRowSearch="isShowRowSearch" :data="detailsData" @closeTableAlert="closeTableAlert"></table-alert>
     </div>
 </template>
 
@@ -149,10 +133,10 @@
     import headTop from '@/components/header'
     import noData from '@/components/noSearchData'
     import qrcodeModal from '@/components/qrcodeModal'
+    import tableAlert from '@/components/tableAlert'
     import { mapState, mapMutations } from 'vuex'
-    import { searchGoodsResult, searchDetails } from '@/service/getData'
+    import { searchGoodsResult, searchDetails, uploadExcel } from '@/service/getData'
     import { getEleTime, exportExcel } from '@/config/untils'
-    import Qrcode from 'qrcode'
 
     export default {
         data() {
@@ -165,66 +149,61 @@
                 searchTypeArr: ['全部', '称重', '记账', '导入', '扫描'], // 搜索类型
                 fileName: '', // 上传文件名称
                 isFileType: false, // 上传文件弹出框 是否显示
-				resultData: '', //
-                totalCount: 1, //总记录数
-                selectCount:0, // 选中数
+                totalCount: 0, //总记录数
                 isShowShareModal: false, // 验证码弹出框
-                resultData: [ // 搜索结果 二次封装
-                    {num:'0', name:'aaa',time:'1018-1-1',count:'infinity', people:'Me'},
-                    {num:'0', name:'aaa',time:'1018-1-1',count:'infinity', people:'Me'},
-                    {num:'0', name:'aaa',time:'1018-1-1',count:'infinity', people:'Me'},
-                    {num:'0', name:'aaa',time:'1018-1-1',count:'infinity', people:'Me'},
-                    {num:'0', name:'aaa',time:'1018-1-1',count:'infinity', people:'Me'},
-                    {num:'0', name:'aaa',time:'1018-1-1',count:'infinity', people:'Me'},
-                    {num:'0', name:'aaa',time:'1018-1-1',count:'infinity', people:'Me'},
-                    {num:'0', name:'aaa',time:'1018-1-1',count:'infinity', people:'Me'},
-                    {num:'0', name:'aaa',time:'1018-1-1',count:'infinity', people:'Me'},
-                    {num:'0', name:'aaa',time:'1018-1-1',count:'infinity', people:'Me'},
-                    {num:'0', name:'aaa',time:'1018-1-1',count:'infinity', people:'Me'},
-                    {num:'0', name:'aaa',time:'1018-1-1',count:'infinity', people:'Me'},
-                    {num:'0', name:'aaa',time:'1018-1-1',count:'infinity', people:'Me'},
-                    {num:'0', name:'aaa',time:'1018-1-1',count:'infinity', people:'Me'},
-                    {num:'0', name:'aaa',time:'1018-1-1',count:'infinity', people:'Me'},
-                    {num:'0', name:'aaa',time:'1018-1-1',count:'infinity', people:'Me'},
-                    {num:'0', name:'aaa',time:'1018-1-1',count:'infinity', people:'Me'},
-                    {num:'0', name:'aaa',time:'1018-1-1',count:'infinity', people:'Me'},
-                    {num:'0', name:'aaa',time:'1018-1-1',count:'infinity', people:'Me'}
-                ],
+                resultData: {}, // 搜索结果 二次封装
                 isShowRowSearch: false, // 表格单行点击 modal
+                detailsData:'', //详情数据
+                selectArr: [], //选中项
+                loading: false,
+                files:'', // 导入的数据
             }
         },
         computed: {
             containerHeight() {
                 return document.body.clientHeight - 112;
+            },
+            shareIds: function() {
+                let arr = [];
+                if( this.selectArr.length > 0 ){
+                    arr = this.selectArr.map( val => {
+                        return val.accountsRecordId
+                    })
+                }else {
+                    if( this.resultData.list && this.resultData.list.length > 0 ) {
+                        arr = this.resultData.list.map( val => {
+                            return val.accountsRecordId
+                        })
+                    }
+                }
+                return arr.join(',');
             }
         },
         components: {
-            headTop, noData, qrcodeModal
+            headTop, noData, qrcodeModal, tableAlert
+        },
+        mounted() {
+            this.getSearchResult();
         },
         methods: {
             //  表格操作列点击
             async tableSearchClick(scope) {
-                console.log(scope);
-                this.rowDetails = await searchDetails(501);
+                this.detailsData = await searchDetails(scope.row.accountsRecordId);
                 this.isShowRowSearch = true;
+            },
+            closeTableAlert() {
+                this.isShowRowSearch = false;
             },
             //选中框改变触发
             handleSelectionChange(val) {
-                console.log(val);
-                this.selectCount = val;
+                this.selectArr = val;
             },
             // 单选行触发
-            handleCurrentChange(row, event, column) {
-                console.log(row)
-                console.log(event)
-                console.log(column)
-                this.$refs.multipleTable.tooggleRowSelection(row, true);
-            },
             /* 导入数据逻辑 */
             isImport(e) {
                 console.dir(e);
                 let files = e.target.files[0];
-                if( files.length == 0 ) return;
+                this.files = files;
                 this.fileName = files.name;
                 let suffixArr = files.name.split('.');
                 let suffix = suffixArr[suffixArr.length - 1];
@@ -243,6 +222,11 @@
             importSure() {
                 this.isFileType = false;
                 //TODO:
+                var formData = new FormData();
+                formData.append("file", this.files);
+                formData.append("name", this.fileName);
+                debugger
+                uploadExcel(formData)
             },
             /* 关闭确定导入弹出框 */
             close() {
@@ -250,15 +234,24 @@
             },
             /* 模版下载 */
             templateDownload() {
-                
+                var form = document.createElement("form");
+                document.body.appendChild(form);
+                form.method = 'post';
+                form.action = "http://cs.nongchangyun.cn/farmeasy-accountsbao-service/downTemplate";
+                form.submit();
             },
             /* 获取子组件的时间 */
             getTime(time) {
                 this.time = getEleTime(time, 1);
+                this.getSearchResult();
             },
             /* 搜索按钮 */
             async getSearchResult() {
+                this.loading = this.$loading({text:'加载中...'});
                 var result = await searchGoodsResult(this.time[0], this.time[1], this.searchContent, this.searchTypeIndex );
+                this.resultData = result.data;
+                this.totalCount = ( result.data.list && result.data.list.length) || 0;
+                this.loading.close();
 
             },
             /* 搜索下拉框 */
@@ -273,18 +266,23 @@
             },
             /* footer 导出 */
             exportFooter() {
-                exportExcel(["551", "670"]);
+                exportExcel(this.shareIds);
             },
             /* footer 打印 */
             printFooter() {
-                window.location.href = "http://cs.nongchangyun.cn/farmeasy-accountsbao-service/hdList/downExcel";
+                this.$router.push({name: 'print', params:{ids: this.shareIds, printType: 1}})
             },
             uploadData() {
-
+                let dom = document.getElementById('import_file');
+                dom.click();
             },
             // 点击分享
             clickShare() {
-                this.isShowShareModal = !this.isShowShareModal;
+                if( this.resultData.list && this.resultData.list.length > 0 ) {
+                    this.isShowShareModal = true;
+                }else {
+                    this.$message('没有可分享的数据');
+                }
             }
         },
     }
@@ -420,7 +418,9 @@
 			@include wh(519px, 328px);
             box-shadow: 1px 2px 6px 0 #919aaa;
             border-radius: 5px;
-			@include center();
+            @include center();
+            background: #FFF;
+            z-index:999999;
         }
         .c-header{
             height:40px;
@@ -525,102 +525,6 @@
 		.select-footer input, .select-footer label{
 			cursor: pointer;
 		}
-    // 表格弹出框样式
-        .mark {
-            z-index:9;
-            position: absolute;
-            width: 100%;
-            top: 0;
-            bottom: 0;
-            background: rgba(0,0,0,0.4);
-            .dialog {
-                width: 678px;
-                height: 465px;
-                background: #fff;
-                box-shadow: 0 7px 6px 0 rgba(0,0,0,0.23);
-                border-radius: 8px;
-                position: absolute;
-                left: 50%;
-                margin-left: -339px;
-                top: 150px;
-                font-size: 14px;
-                .dialog-title{
-                    height: 50px;
-                    line-height: 50px;
-                    padding-left: 20px;
-                    padding-right: 20px;
-                    position: relative;
-                    border-bottom: 1px solid #dcdcdc;
-                    cursor: pointer;
-                    img{
-                        width: 16px;
-                        height: 16px;
-                        position: absolute;
-                        right: 20px;
-                        top: 17px;
-                    }
-                }
-            }
-
-            .dialog-content{
-                padding: 20px 30px 24px;
-            .dialog-table{
-                width: 100%;
-                border: 1px solid #dfdfdf;
-                tr{
-                    height: 42px;
-                    line-height: 42px;
-                    td{
-                        width: 100px;
-                        overflow: hidden;
-                        white-space: nowrap;
-                        text-overflow: ellipsis;
-                        -o-text-overflow: ellipsis;
-                        -icab-text-overflow: ellipsis;
-                        -khtml-text-overflow: ellipsis;
-                        -moz-text-overflow: ellipsis;
-                        -webkit-text-overflow: ellipsis;
-                        border-right: 1px dashed #dedede;
-                        border-bottom: 1px dashed #dedede;
-                        text-align: center;
-                    }
-                    td:last-child{
-                        border-right: 0;
-                    }
-                    .table-title{
-                        width: 206px;
-                        text-align: left;
-                        padding-left: 16px;
-                        background: #f6fafc;
-                    }
-                }
-                tr:last-child td{
-                    border-bottom: 0;
-                }
-            }
-            }
-            .back{
-                width: 100%;
-                position: relative;
-                a{
-                    display: inline-block;
-                    width: 100px;
-                    height: 35px;
-                    text-align: center;
-                    line-height: 35px;
-                    color: #666;
-                    border: 1px solid #cccccc;
-                    border-radius: 8px;
-                    position: absolute;
-                    left: 50%;
-                    margin-left: -50px;
-                    cursor: pointer;
-                }
-                a:hover{
-                    background: #F3F3F3;
-                }
-            }
-        }
     }
 
 </style>

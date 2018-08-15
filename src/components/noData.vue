@@ -3,7 +3,7 @@
     <div class="more" v-show="totalCount == 0">
         <img src="@/assets/imgs/no-data.png" alt=""/>
         <div class="">
-            <div>您还没有数据, 选择下列方式去生成去生成货单吧！</div>
+            <div>没有搜索到相关数据</div>
             <div></div>
             <div></div>
         </div>

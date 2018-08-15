@@ -22,6 +22,12 @@ const bill = r => require.ensure(
 const wait = r => require.ensure(
   [], () => r( require('../page/wait/wait') ), 'wait'
 )
+const share = r => require.ensure(
+  [], () => r( require('../page/share/share') ), 'share'
+)
+const print = r => require.ensure(
+  [], () => r( require('../page/print/print') ), 'print'
+)
 
 Vue.use(Router)
 
@@ -58,6 +64,14 @@ export default new Router({
     /* 账单  */
     {
       path: '/bill', name: 'bill', component: bill, meta: { requireAuth: true }
+    },
+    /* 分享 */
+    {
+      path: '/share', name: 'share', component: share
+    },
+    /* 打印 */
+    {
+      path: '/print', name: 'print', component: print
     },
   ]
 })
